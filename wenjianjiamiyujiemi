@@ -1,0 +1,143 @@
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+class KeyPanel extends JPanel{ 
+    KeyPanel(String str){ 
+
+   JLabel label = new JLabel(str);  
+   JTextField fileText = new JTextField(35);  
+   JButton chooseButton = new JButton("随机产生"); 
+    this.add(label);      
+    this.add(fileText);      
+    this.add(chooseButton);  
+ 
+    clickAction ca = new clickAction(this);      
+    chooseButton.addActionListener(ca);
+    }//返回生成的密码（48个字符长度）
+    public String getKey(){  
+  	  JTextField jtf = (JTextField)this.getComponent(1);      
+  	  return jtf.getText();  
+    }  
+
+private class clickAction implements ActionListener{        
+	clickAction(Component c){      
+		cmpt = c;      
+	}  
+  
+	public void actionPerformed(ActionEvent event){ 
+		try{  
+			
+			KeyGenerator kg = KeyGenerator.getInstance("DES"); //按DES密钥规范生成密钥生成器kg.init(56); //初始化，密钥长度为56  
+			SecretKey ke = kg.generateKey(); 
+			byte[] bytK1 = ke.getEncoded();  
+			ke = kg.generateKey(); 
+
+			byte[] bytK2 = ke.getEncoded();           
+			ke = kg.generateKey();  
+ 
+			byte[] bytK3 = ke.getEncoded();           
+			JPanel jp = (JPanel)cmpt;  
+
+			JTextField jtf = (JTextField)jp.getComponent(1);  
+
+			jtf.setText(getByteStr(bytK1)+getByteStr(bytK2)+getByteStr(bytK3));         
+		} 
+		catch(Exception e){ //异常处理 
+			e.printStackTrace();    
+		}
+	}  
+	private String getByteStr(byte[] byt){ //将密码转换为16进制
+		String strRet = ""; 
+
+		for(int i=0;i< byt.length;i++){ 
+
+			strRet += getHexValue((byt[i]&240)/16);       
+			strRet += getHexValue(byt[i]&15); 
+		}  
+
+		return strRet; 
+	} 
+ 
+	private String getHexValue(int s){ //转换为16进制字符形式      
+		String sRet=null;    
+		switch (s){  
+		case  0: sRet = "0";break; 
+		case  1: sRet = "1";break;
+		case  2: sRet = "2";break; 
+        case  3: sRet = "3";break; 
+        case  4: sRet = "4";break; 
+        case  5: sRet = "5";break; 
+        case  6: sRet = "6";break;
+        case  7: sRet = "7";break;
+        case  8: sRet = "8";break;        
+        case  9: sRet = "9";break;      
+        case 10: sRet = "A";break; 
+        case 11: sRet = "B";break; 
+        case 12: sRet = "C";break;
+        case 13: sRet = "D";break;
+        case 14: sRet = "E";break;
+        case 15: sRet = "F";
+		}  
+    
+		return sRet;      
+	}  
+  
+		private Component cmpt;
+	}
+}
+
+ public class FileEncrypter extends JFrame{  //FileEncrypter继承JFrame类
+	public static final int WIDTH = 550;   //定义不可变的宽度值为550
+	public static final int HEIGHT=200;   //定义不可变的高度值为200  
+	public static void main(String args[]){    //新建一个可见的框体
+		FileEncrypter fe = new FileEncrypter();
+		fe.show();
+	}
+
+	FileEncrypter(){//构造方法设置新建框体的标题；框体的宽度和高度；关闭时的操作；框体大小不可变；框体在屏幕上显示的位置。
+		this.setSize(WIDTH,HEIGHT);
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setResizable(false);
+		Toolkit tk = Toolkit.getDefaultToolkit();
+		Dimension screenSize = tk.getScreenSize();
+		this.setLocation((screenSize.width - WIDTH)/2,(screenSize.height - HEIGHT)/2);
+		this.setTitle("文件加密器(TirDES)");//以上设置新建框体的标题；框体的宽度和高度；关闭时的操作；框体大小不可变；框体在屏幕上显示的位置。  
+		final Container c =this.getContentPane();//创建容器c 
+
+		c.setLayout(new FlowLayout());//c采用FlowLayout布局管理 
+		final FilePanel fp = new FilePanel("文件选择");
+		c.add(fp);//添加名为“文件选择”面板  
+		final KeyPanel pp = new KeyPanel("密码");
+		c.add(pp);//添加名为“密码”面板 
+		JButton jbE = new JButton("加密");
+		c.add(jbE);//添加加密按钮 
+
+		jbE.addActionListener(new ActionListener(){//设置加密监听器     
+			public void actionPerformed(ActionEvent event){
+				File file = new File(fp.getFileName());
+
+				if(file.exists())
+					encrypt(file.getAbsoluteFile(),pp.getKey());
+				else
+					JOptionPane.showMessageDialog(null,"请选择文件！","提示",JOptionPane.OK_OPTION);
+			}
+		});
+
+		JButton jbD = new JButton("解密");	
+		c.add(jbD);//添加解密按钮
+		jbD.addActionListener(new ActionListener(){//设置解密监听器     
+			public void actionPerformed(ActionEvent event){
+				File file=new File(fp.getFileName());
+					if(file.exists())
+						decrypt(file.getAbsoluteFile(),pp.getKey());
+					else
+						JOptionPane.showMessageDialog(null,"请选择文件！","提示",JOptionPane.OK_OPTION);
+			}
+		});
